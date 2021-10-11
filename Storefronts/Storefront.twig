@@ -1,0 +1,176 @@
+{% model 'Coolblue\\WebShop\\Presentation\\Search\\GuidedQuestionnaireModel' %}
+
+{% if no_more_questions is same as (true) or (current_question is defined and current_question is not empty) %}
+    {% set title %}
+        {% if no_more_questions %}
+            {% embed '/Components/IconWithText/IconWithText.twig' with {
+                'text': _n(
+                    '{result_count} geschikt product uitgekozen',
+                    '{result_count} geschikte {product_type} uitgekozen',
+                    result_count,
+                    {
+                        'result_count': result_count,
+                        'product_type': product_type
+                    }
+                ),
+                'icon': icon|trim,
+                'color': color|trim
+            } only %}
+                {% block icon %}
+                    {% include '/Components/Icons/Icon.twig' with {
+                        'type': 'circleCheckmark',
+                        'color': 'green'
+                    } only %}
+                {% endblock %}
+            {% endembed %}
+        {% else %}
+            {{ current_question }}
+        {% endif %}
+    {% endset %}
+
+    {% set modal_header_content %}
+        {% embed '/Catalog/Blocks/QuestionnaireOverlay/OverlayHeader.Questionnaire.twig' with {
+            'title': title,
+            'data_component': data_component,
+            'icon': 'circleCheckmark',
+            'color': 'green'
+        } only %}
+            {% block additional_attributes %}
+                {{ data_component_attr({ 'name': 'questionnaireTitle' }) }}
+            {% endblock %}
+            {% block content %}
+                {{ title|raw }}
+            {% endblock %}
+        {% endembed %}
+    {% endset %}
+
+    {% set panel_header_content %}
+        {% include '/Components/OverlayHeader/OverlayHeader.Text.Blue.twig' with {
+            'title': __('Hulp bij je keuze')
+        } only %}
+    {% endset %}
+
+    {% set overlay_content %}
+        <div data-questionnaire-url={{ questionnaire_url }}>
+            <div
+                class="questionnaire"
+                {{ data_component_attr('questionnaire') }}
+                data-html-fragment="questionnaire"
+                data-questionnaire-url={{ questionnaire_url }}
+                {% if is_first_question %}data-questionnaire-is-first-question="true"{% endif %}
+                data-questionnaire-type="guided"
+                {{ internalUse('data-bug-reporter-id="filter-questionnaire"') }}
+                {{ test_attribute('filter-questionnaire') }}
+            >
+                {% if no_more_questions is same as (true) %}
+                    {% include '/Catalog/Blocks/QuestionnaireOverlay/Overlay.Summary.twig' with {
+                        'result_count': result_count,
+                        'ga_event_category': ga_event_category,
+                        'product_type': product_type,
+                        'key_slug': key_slug,
+                        'filter_indicators': filter_indicators,
+                        'summary': summary
+                    } only %}
+                {% else %}
+                    {% include '/Catalog/Blocks/QuestionnaireOverlay/Overlay.Question.twig' with {
+                        'current_question': current_question,
+                        'next_question': next_question,
+                        'ga_event_category': ga_event_category,
+                        'question_type': question_type,
+                        'is_question_required': is_question_required,
+                        'possible_answers': possible_answers,
+                        'product_type': product_type,
+                        'is_answered': is_answered,
+                        'result_count': result_count,
+                        'default_next_question': default_next_question,
+                        'is_first_question': is_first_question,
+                        'key_slug': key_slug,
+                        'no_more_questions': no_more_questions,
+                        'price_from': price_from,
+                        'price_to': price_to,
+                        'show_price_excluding_vat': show_price_excluding_vat,
+                        'price_excluding_vat_from': price_excluding_vat_from,
+                        'price_excluding_vat_to': price_excluding_vat_to
+                    } only %}
+                {% endif %}
+            </div>
+        </div>
+    {% endset %}
+
+    {% set panel_footer %}
+        {% include '/Catalog/Blocks/QuestionnaireOverlay/Footer.Mobile.twig' with {
+            'is_first_question': is_first_question,
+            'key_slug': key_slug,
+            'ga_event_category': ga_event_category,
+            'skips_question': not is_answered,
+            'is_answered': is_answered,
+            'is_question_required': is_question_required,
+            'no_more_questions': no_more_questions,
+            'next_question_id': default_next_question,
+            'result_count': result_count,
+            'product_type': product_type,
+            'price_from': price_from,
+            'price_to': price_to,
+            'current_question': current_question,
+            'next_question': next_question,
+            'price_excluding_vat_from': price_excluding_vat_from,
+            'price_excluding_vat_to': price_excluding_vat_to
+        } only %}
+    {% endset %}
+
+    {% set modal_box_component = {
+        'name': 'questionnaireOverlay',
+        'isActiveOn': ['tablet', 'desktop', 'large-desktop'],
+        'options': {
+            'headerContent': modal_header_content,
+            'content': overlay_content,
+            'modal': true,
+            'maxWidth': 'large',
+            'openTracking': {
+                'ga': {
+                    'category': ga_event_category,
+                    'action': 'questionnaire open overlay'
+                }
+            },
+            'closeTracking': {
+                'ga': {
+                    'category': ga_event_category,
+                    'action': 'questionnaire close overlay'
+                }
+            }
+        }
+    } %}
+
+    {% set panel_component = {
+        'name': 'questionnaireOverlay',
+        'options': {
+            'headerContent': panel_header_content,
+            'content': overlay_content,
+            'fillMaxWidth': true,
+            'footerContent': panel_footer,
+            'hasStickyFooter': true,
+            'openTracking': {
+                'ga': {
+                    'category': ga_event_category,
+                    'action': 'questionnaire open overlay'
+                }
+            },
+            'closeTracking': {
+                'ga': {
+                    'category': ga_event_category,
+                    'action': 'questionnaire close overlay'
+                }
+            }
+        },
+        'isActiveOn': ['mobile']
+    } %}
+
+    {% if is_ajax %}
+        <div class="hide" data-html-fragment="questionnaireOverlay">{{ overlay_content }}</div>
+        <div class="hide" data-html-fragment="questionnaireTitle">{{ title }}</div>
+        <div class="hide" data-html-fragment="questionnaireFooter">{{ panel_footer }}</div>
+    {% endif %}
+
+    <script class="js-questionnaire-panel" {{ data_component_attr([panel_component]) }}></script>
+    <script class="js-questionnaire-modal-box" {{ data_component_attr([modal_box_component]) }}></script>
+{% endif %}
